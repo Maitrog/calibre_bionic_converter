@@ -93,6 +93,21 @@ def process_htmlz(input_file, output_file, original_format):
         subprocess.run(cmd_convert_back, check=True)
 
 
+def process_fb2(input_file, output_file):
+    with open(input_file, "r", encoding="utf-8") as f:
+        soup = BeautifulSoup(f, "xml")
+
+    for text_node in soup.find_all(string=True):
+        parent = text_node.parent.name if text_node.parent else None
+        if parent in ["title", "subtitle", "FictionBook", "description", "title-info", "genre", "author", "first-name", "middle-name", "last-name", "id", "book-title", "date", "coverpage", "image", "lang", "sequence", "document-info", "nickname", "email", "program-used", "src-url", "src-ocr", "version", "history", "binary", "emphasis"]:
+            continue
+        if text_node.strip():
+            apply_bionic_reading_to_node(text_node, soup)
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        f.write(str(soup))
+
+
 def main():
     if len(sys.argv) != 2:
         print("Usage: python bionic_reader.py input_file")
@@ -102,12 +117,15 @@ def main():
         print("File not found.")
         sys.exit(1)
     file_name, file_ext = os.path.splitext(input_file)
-    supported_formats = [".epub", ".mobi", ".azw3"]
+    supported_formats = [".epub", ".mobi", ".azw3", ".fb2"]
     if file_ext.lower() not in supported_formats:
-        print("Supported input formats are .epub, .mobi, and .azw3.")
+        print("Supported input formats are .epub, .mobi, .fb2, and .azw3.")
         sys.exit(1)
     output_file = f"{file_name}_fastread{file_ext}"
-    process_htmlz(input_file, output_file, file_ext.lower()[1:])
+    if file_ext.lower() == ".fb2":
+        process_fb2(input_file, output_file)
+    else:
+        process_htmlz(input_file, output_file, file_ext.lower()[1:])
     print(f"Processed file saved as {output_file}")
 
 
